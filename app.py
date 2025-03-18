@@ -12,37 +12,37 @@ def pad_alfa(value, length):
     s = str(value)
     return s.ljust(length)[:length]
 
-# Função para gerar o Registro Header do Arquivo
+# Registro Header do Arquivo
 def build_header_arquivo(company):
     record = ""
-    record += pad_numeric("077", 3)                           # Código do banco (pos. 1-3)
-    record += pad_numeric("0000", 4)                          # Lote de serviço (pos. 4-7)
-    record += "0"                                             # Tipo de registro (pos. 8)
-    record += " " * 9                                         # Campo em branco (pos. 9-17)
-    record += "2"                                             # Tipo de documento (CNPJ) (pos. 18)
-    record += pad_numeric(company["cnpj"], 14)                # CNPJ (pos. 19-32)
-    record += " " * 20                                        # Campo em branco (pos. 33-52)
-    record += pad_numeric(company["agencia"], 5)              # Agência (pos. 53-57)
-    record += pad_alfa(company["agencia_dv"], 1)              # Dígito da agência (pos. 58)
-    record += pad_numeric(company["conta"], 12)               # Conta corrente (pos. 59-70)
-    record += pad_numeric(company["conta_dv"], 1)             # Dígito da conta (pos. 71)
-    record += " "                                             # Campo em branco (pos. 72)
-    record += pad_alfa(company["nome_empresa"], 30)           # Nome da empresa (pos. 73-102)
-    record += pad_alfa("BANCO INTER", 30)                     # Nome do banco (pos. 103-132)
-    record += " " * 10                                        # Campo em branco (pos. 133-142)
-    record += "1"                                             # Código de remessa (pos. 143)
+    record += pad_numeric("077", 3)                           # Código do banco (1-3)
+    record += pad_numeric("0000", 4)                          # Lote de serviço (4-7)
+    record += "0"                                             # Tipo de registro (8)
+    record += " " * 9                                         # Campo em branco (9-17)
+    record += "2"                                             # Tipo de documento (CNPJ) (18)
+    record += pad_numeric(company["cnpj"], 14)                # CNPJ (19-32)
+    record += " " * 20                                        # Campo em branco (33-52)
+    record += pad_numeric(company["agencia"], 5)              # Agência (53-57)
+    record += pad_alfa(company["agencia_dv"], 1)              # Dígito da agência (58)
+    record += pad_numeric(company["conta"], 12)               # Conta (59-70)
+    record += pad_numeric(company["conta_dv"], 1)             # Dígito da conta (71)
+    record += " "                                             # Campo em branco (72)
+    record += pad_alfa(company["nome_empresa"], 30)           # Nome da empresa (73-102)
+    record += pad_alfa("BANCO INTER", 30)                     # Nome do banco (103-132)
+    record += " " * 10                                        # Campo em branco (133-142)
+    record += "1"                                             # Código de remessa (143)
     hoje = datetime.datetime.now()
-    record += hoje.strftime("%d%m%Y")                         # Data de geração (pos. 144-151)
-    record += hoje.strftime("%H%M%S")                         # Hora de geração (pos. 152-157)
-    record += pad_numeric("1", 6)                             # Número sequencial do arquivo (pos. 158-163)
-    record += pad_numeric("107", 3)                           # Versão do layout (pos. 164-166)
-    record += pad_numeric("01600", 5)                         # Densidade de gravação (pos. 167-171)
-    record += " " * 20                                        # Uso reservado do banco (pos. 172-191)
-    record += " " * 20                                        # Uso reservado da empresa (pos. 192-211)
-    record += " " * 29                                        # Uso exclusivo FEBRABAN/CNAB (pos. 212-240)
+    record += hoje.strftime("%d%m%Y")                         # Data de geração (144-151)
+    record += hoje.strftime("%H%M%S")                         # Hora de geração (152-157)
+    record += pad_numeric("1", 6)                             # Número sequencial do arquivo (158-163)
+    record += pad_numeric("107", 3)                           # Versão do layout (164-166)
+    record += pad_numeric("01600", 5)                         # Densidade de gravação (167-171)
+    record += " " * 20                                        # Uso reservado do banco (172-191)
+    record += " " * 20                                        # Uso reservado da empresa (192-211)
+    record += " " * 29                                        # Uso exclusivo FEBRABAN/CNAB (212-240)
     return record.ljust(240)
 
-# Função para gerar o Header de Lote para PIX (seção 6.1)
+# Header do Lote para PIX (seção 6.1)
 def build_header_lote_pix(company):
     record = ""
     record += pad_numeric("077", 3)                           # Código do banco (1-3)
@@ -74,7 +74,7 @@ def build_header_lote_pix(company):
     record += " " * 10                                        # Ocorrências para retorno (231-240)
     return record.ljust(240)
 
-# Função para gerar o registro Detalhe – Segmento A PIX (seção 6.2)
+# Registro Detalhe – Segmento A PIX (seção 6.2)
 def build_segmento_a_pix(transaction, seq):
     record = ""
     record += pad_numeric("077", 3)                           # Código do banco (1-3)
@@ -85,29 +85,29 @@ def build_segmento_a_pix(transaction, seq):
     record += "0"                                             # Tipo de movimento (15)
     record += pad_numeric("00", 2)                            # Código da instrução para movimento (16-17)
     record += pad_numeric("000", 3)                           # Código da câmara centralizadora (18-20)
-    # Dados do favorecido – se forma de iniciação for "05" (Dados Bancários), preenche; senão, zeros/brancos
+    # Bloco de dados do favorecido – deve ocupar 53 caracteres
     if transaction["forma_iniciacao"] == "05":
-        record += pad_numeric(transaction.get("fav_banco", ""), 3)      # Código do banco do favorecido (21-23)
-        record += pad_numeric(transaction.get("fav_agencia", ""), 5)     # Agência (24-28)
-        record += pad_alfa(transaction.get("fav_agencia_dv", ""), 1)      # DV Agência (29)
-        record += pad_numeric(transaction.get("fav_conta", ""), 12)       # Conta (30-41)
-        record += pad_alfa(transaction.get("fav_conta_dv", ""), 1)        # DV Conta (42)
-        record += " "                                                    # Campo em branco (43)
-        record += pad_alfa(transaction.get("fav_nome", ""), 30)           # Nome do Favorecido (44-73)
+        record += pad_numeric(transaction.get("fav_banco", ""), 3)      # (21-23)
+        record += pad_numeric(transaction.get("fav_agencia", ""), 5)     # (24-28)
+        record += pad_alfa(transaction.get("fav_agencia_dv", ""), 1)      # (29)
+        record += pad_numeric(transaction.get("fav_conta", ""), 12)       # (30-41)
+        record += pad_alfa(transaction.get("fav_conta_dv", ""), 1)        # (42)
+        record += " "                                                    # (43)
+        record += pad_alfa(transaction.get("fav_nome", ""), 30)           # (44-73)
     else:
-        record += "000"                  # Código do banco = "000" (21-23)
-        record += "00000"                # Agência = "00000" (24-28)
-        record += " "                    # DV Agência (29)
+        record += "000"                  # Código do banco = "000" (3 caracteres, 21-23)
+        record += "00000"                # Agência = "00000" (5 caracteres, 24-28)
+        record += " "                    # DV Agência (1 caractere, 29)
         record += "0" * 12               # Conta = 12 zeros (30-41)
-        record += " "                    # DV Conta (42)
-        record += " " * 30               # Nome do Favorecido em branco (44-73)
+        record += " "                    # DV Conta (1 caractere, 42)
+        record += " " * 30               # Nome do Favorecido em branco (30 caracteres, 43-72)
+        record += " "                    # Espaço extra para totalizar 53 caracteres (73)
     record += pad_alfa(transaction.get("doc_empresa", ""), 20)  # Número do documento atribuído para a empresa (74-93)
-    # Data do pagamento no formato DDMMAAAA
+    # Data do pagamento no formato DDMMAAAA (8 dígitos: 94-101)
     date_str = transaction["data_pagamento"].strftime("%d%m%Y")
-    record += date_str                                        # Data do pagamento (94-101)
+    record += date_str
     record += pad_alfa("BRL", 3)                              # Tipo da moeda (102-104)
-    record += pad_numeric("0", 15)                            # Quantidade da moeda (105-119) – zeros fixos
-    # Valor do pagamento: converter para centavos e formatar em 15 dígitos
+    record += pad_numeric("0", 15)                            # Quantidade da moeda (105-119)
     try:
         valor = float(transaction["valor_pagamento"].replace(",", "."))
     except:
@@ -125,7 +125,7 @@ def build_segmento_a_pix(transaction, seq):
     record += " " * 10                                        # Ocorrências para retorno (231-240)
     return record.ljust(240)
 
-# Função para gerar o registro Detalhe – Segmento B PIX (seção 6.3)
+# Registro Detalhe – Segmento B PIX (seção 6.3)
 def build_segmento_b_pix(transaction, seq):
     record = ""
     record += pad_numeric("077", 3)                           # Código do banco (1-3)
@@ -136,7 +136,7 @@ def build_segmento_b_pix(transaction, seq):
     record += pad_alfa(transaction["forma_iniciacao"], 3)     # Forma de iniciação (15-17) – ex: "01", "02", etc.
     record += pad_numeric(transaction["tipo_doc_fav"], 1)       # Tipo de documento do Favorecido (18)
     record += pad_numeric(transaction["doc_fav"], 14)         # CPF/CNPJ do Favorecido (19-32)
-    record += pad_alfa(transaction["txid"], 35)               # TX ID (opcional) (33-67)
+    record += pad_alfa(transaction["txid"], 35)               # TX ID (33-67)
     record += " " * 60                                        # Campo em branco (68-127)
     if transaction["forma_iniciacao"] in ["01", "02", "04"]:
         record += pad_alfa(transaction["chave_pix"], 99)      # Chave Pix (128-226)
@@ -149,7 +149,7 @@ def build_segmento_b_pix(transaction, seq):
         record += pad_numeric("0", 8)
     return record.ljust(240)
 
-# Função para gerar o Trailer do Lote (seção 6.4)
+# Trailer do Lote (seção 6.4)
 def build_trailer_lote(n_transacoes, total_valor):
     record = ""
     record += pad_numeric("077", 3)                           # Código do banco (1-3)
@@ -166,7 +166,7 @@ def build_trailer_lote(n_transacoes, total_valor):
     record += " " * 10                                        # Ocorrências para retorno (231-240)
     return record.ljust(240)
 
-# Função para gerar o Trailer do Arquivo
+# Trailer do Arquivo
 def build_trailer_arquivo(total_lotes, total_registros):
     record = ""
     record += pad_numeric("077", 3)                           # Código do banco (1-3)
@@ -178,13 +178,13 @@ def build_trailer_arquivo(total_lotes, total_registros):
     record += " " * (240 - (3+4+1+9+6+6))                     # Completa com espaços até 240
     return record.ljust(240)
 
-# Função para gerar o arquivo CNAB240 completo
+# Geração do arquivo CNAB240 completo
 def generate_cnab_file(company, transactions):
     lines = []
-    # Registro Header do Arquivo
+    # Header do Arquivo
     header_arquivo = build_header_arquivo(company)
     lines.append(header_arquivo)
-    # Header do Lote (PIX)
+    # Header do Lote
     header_lote = build_header_lote_pix(company)
     lines.append(header_lote)
     seq = 1
@@ -204,20 +204,17 @@ def generate_cnab_file(company, transactions):
     # Trailer do Lote
     trailer_lote = build_trailer_lote(len(transactions), total_valor)
     lines.append(trailer_lote)
-    # Total de registros do arquivo:
-    # 1 (Header Arquivo) + 1 (Header Lote) + 2*n (detalhes) + 1 (Trailer Lote) + 1 (Trailer Arquivo)
+    # Registro Trailer do Arquivo: total de registros = 1 (Header) + 1 (Header Lote) + 2*n + 1 (Trailer Lote) + 1 (Trailer Arquivo)
     total_registros = 1 + 1 + (2 * len(transactions)) + 1 + 1
     trailer_arquivo = build_trailer_arquivo(1, total_registros)
     lines.append(trailer_arquivo)
     return "\n".join(lines)
 
 # ===================== INTERFACE STREAMLIT =====================
-
 st.title("Gerador de Arquivo CNAB240 - Pagamentos via PIX")
 
 st.markdown("Preencha os dados da empresa:")
 
-# Formulário para dados da empresa
 with st.form("company_info"):
     cnpj = st.text_input("CNPJ (somente números, 14 dígitos)")
     agencia = st.text_input("Agência (5 dígitos)", value="00001")
@@ -251,7 +248,6 @@ with st.form("company_info"):
         }
         st.success("Dados da empresa salvos!")
 
-# Inicializa lista de transações se ainda não existir
 if "transactions" not in st.session_state:
     st.session_state.transactions = []
 
@@ -262,7 +258,6 @@ with st.form("transaction_form"):
     doc_empresa = st.text_input("Número do Documento atribuído para a empresa (opcional)")
     forma_iniciacao = st.selectbox("Forma de Iniciação (tipo de chave)", 
                                    options=["01 - Telefone", "02 - Email", "03 - CPF/CNPJ", "04 - Chave Aleatória", "05 - Dados Bancários"])
-    # Se for Dados Bancários, solicita dados do favorecido
     if forma_iniciacao.startswith("05"):
         fav_banco = st.text_input("Banco do Favorecido (3 dígitos)")
         fav_agencia = st.text_input("Agência do Favorecido (5 dígitos)")
@@ -277,7 +272,6 @@ with st.form("transaction_form"):
         fav_conta = ""
         fav_conta_dv = ""
         fav_nome = ""
-    # Dados para Segmento B
     tipo_doc_fav = st.selectbox("Tipo de documento do Favorecido", options=["1 - CPF", "2 - CNPJ"])
     doc_fav = st.text_input("CPF/CNPJ do Favorecido (somente números)")
     txid = st.text_input("TX ID (opcional)")
@@ -289,7 +283,7 @@ with st.form("transaction_form"):
             "data_pagamento": data_pagamento,
             "valor_pagamento": valor_pagamento,
             "doc_empresa": doc_empresa,
-            "forma_iniciacao": forma_iniciacao.split(" - ")[0],  # guarda somente o código (ex.: "01")
+            "forma_iniciacao": forma_iniciacao.split(" - ")[0],
             "fav_banco": fav_banco,
             "fav_agencia": fav_agencia,
             "fav_agencia_dv": fav_agencia_dv,
