@@ -15,31 +15,32 @@ def pad_alfa(value, length):
 # Registro Header do Arquivo
 def build_header_arquivo(company):
     record = ""
-    record += pad_numeric("077", 3)                           # Código do banco (1-3)
-    record += pad_numeric("0000", 4)                          # Lote de serviço (4-7)
-    record += "0"                                             # Tipo de registro (8)
-    record += " " * 9                                         # Campo em branco (9-17)
-    record += "2"                                             # Tipo de documento (CNPJ) (18)
-    record += pad_numeric(company["cnpj"], 14)                # CNPJ (19-32)
-    record += " " * 20                                        # Campo em branco (33-52)
-    record += pad_numeric(company["agencia"], 5)              # Agência (53-57)
-    record += pad_alfa(company["agencia_dv"], 1)              # Dígito da agência (58)
-    record += pad_numeric(company["conta"], 12)               # Conta (59-70)
-    record += pad_numeric(company["conta_dv"], 1)             # Dígito da conta (71)
-    record += " "                                             # Campo em branco (72)
-    record += pad_alfa(company["nome_empresa"], 30)           # Nome da empresa (73-102)
-    record += pad_alfa("BANCO INTER", 30)                     # Nome do banco (103-132)
-    record += " " * 10                                        # Campo em branco (133-142)
-    record += "1"                                             # Código de remessa (143)
+    record += pad_numeric("077", 3)                           # Código do banco (pos. 1-3)
+    record += pad_numeric("0000", 4)                          # Lote de serviço (pos. 4-7)
+    record += "0"                                             # Tipo de registro (pos. 8)
+    record += " " * 9                                         # Campo em branco (pos. 9-17)
+    record += "2"                                             # Tipo de documento (CNPJ) (pos. 18)
+    record += pad_numeric(company["cnpj"], 14)                # CPF/CNPJ da empresa (pos. 19-32)
+    record += " " * 20                                        # Campo em branco (pos. 33-52)
+    record += pad_numeric(company["agencia"], 5)              # Agência (pos. 53-57)
+    record += pad_alfa(company["agencia_dv"], 1)              # Dígito da agência (pos. 58)
+    record += pad_numeric(company["conta"], 12)               # Conta corrente (pos. 59-70)
+    record += pad_numeric(company["conta_dv"], 1)             # Dígito da conta (pos. 71)
+    record += " "                                             # Campo em branco (pos. 72)
+    record += pad_alfa(company["nome_empresa"], 30)           # Nome da empresa (pos. 73-102)
+    record += pad_alfa("BANCO INTER", 30)                     # Nome do banco (pos. 103-132)
+    record += " " * 10                                        # Campo em branco (pos. 133-142)
+    record += "1"                                             # Código de remessa (pos. 143)
     hoje = datetime.datetime.now()
-    record += hoje.strftime("%d%m%Y")                         # Data de geração (144-151)
-    record += hoje.strftime("%H%M%S")                         # Hora de geração (152-157)
-    record += pad_numeric("1", 6)                             # Número sequencial do arquivo (158-163)
-    record += pad_numeric("107", 3)                           # Versão do layout (164-166)
-    record += pad_numeric("01600", 5)                         # Densidade de gravação (167-171)
-    record += " " * 20                                        # Uso reservado do banco (172-191)
-    record += " " * 20                                        # Uso reservado da empresa (192-211)
-    record += " " * 29                                        # Uso exclusivo FEBRABAN/CNAB (212-240)
+    record += hoje.strftime("%d%m%Y")                         # Data de geração do arquivo (pos. 144-151)
+    record += hoje.strftime("%H%M%S")                         # Hora de geração (pos. 152-157)
+    # Número sequencial do arquivo: no header usamos 6 dígitos
+    record += pad_numeric(company["sequencial"], 6)           # (pos. 158-163)
+    record += pad_numeric("107", 3)                           # Número da versão do layout (pos. 164-166)
+    record += pad_numeric("01600", 5)                         # Densidade de gravação (pos. 167-171)
+    record += " " * 20                                        # Uso reservado do banco (pos. 172-191)
+    record += " " * 20                                        # Uso reservado da empresa (pos. 192-211)
+    record += " " * 29                                        # Uso exclusivo FEBRABAN/CNAB (pos. 212-240)
     return record.ljust(240)
 
 # Header do Lote para PIX (seção 6.1)
@@ -103,8 +104,7 @@ def build_segmento_a_pix(transaction, seq):
         record += " " * 30               # Nome do Favorecido em branco (30 caracteres, 43-72)
         record += " "                    # Espaço extra para totalizar 53 caracteres (73)
     record += pad_alfa(transaction.get("doc_empresa", ""), 20)  # Número do documento atribuído para a empresa (74-93)
-    # Data do pagamento no formato DDMMAAAA (8 dígitos: 94-101)
-    date_str = transaction["data_pagamento"].strftime("%d%m%Y")
+    date_str = transaction["data_pagamento"].strftime("%d%m%Y")  # Data do pagamento (DDMMAAAA - 8 dígitos, pos. 94-101)
     record += date_str
     record += pad_alfa("BRL", 3)                              # Tipo da moeda (102-104)
     record += pad_numeric("0", 15)                            # Quantidade da moeda (105-119)
@@ -133,7 +133,7 @@ def build_segmento_b_pix(transaction, seq):
     record += "3"                                             # Tipo de registro (8)
     record += pad_numeric(seq, 5)                             # Número sequencial (9-13)
     record += "B"                                             # Código de segmento (14)
-    record += pad_alfa(transaction["forma_iniciacao"], 3)     # Forma de iniciação (15-17) – ex: "01", "02", etc.
+    record += pad_alfa(transaction["forma_iniciacao"], 3)     # Forma de iniciação (15-17)
     record += pad_numeric(transaction["tipo_doc_fav"], 1)       # Tipo de documento do Favorecido (18)
     record += pad_numeric(transaction["doc_fav"], 14)         # CPF/CNPJ do Favorecido (19-32)
     record += pad_alfa(transaction["txid"], 35)               # TX ID (33-67)
@@ -229,6 +229,7 @@ with st.form("company_info"):
     cep = st.text_input("CEP (somente números, 5 dígitos)")
     estado = st.text_input("Estado (2 letras)")
     generica = st.text_input("Informação Genérica Opcional (até 40 caracteres)", value="")
+    sequencial = st.text_input("Número Sequencial do Arquivo (4 dígitos)", value="0001")
     submitted_company = st.form_submit_button("Salvar Dados da Empresa")
     if submitted_company:
         st.session_state.company = {
@@ -244,7 +245,8 @@ with st.form("company_info"):
             "cidade": cidade,
             "cep": cep,
             "estado": estado,
-            "generica": generica
+            "generica": generica,
+            "sequencial": sequencial
         }
         st.success("Dados da empresa salvos!")
 
@@ -308,4 +310,6 @@ if st.session_state.get("transactions"):
             st.error("Por favor, preencha os dados da empresa primeiro.")
         else:
             arquivo = generate_cnab_file(st.session_state.company, st.session_state.transactions)
-            st.download_button("Download do Arquivo .REM", data=arquivo, file_name="arquivo.rem", mime="text/plain")
+            # O nome do arquivo será: CI240_001_XXXX.rem, onde XXXX é o número sequencial informado (4 dígitos)
+            file_name = f"CI240_001_{pad_numeric(st.session_state.company['sequencial'], 4)}.rem"
+            st.download_button("Download do Arquivo .REM", data=arquivo, file_name=file_name, mime="text/plain")
