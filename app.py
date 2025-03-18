@@ -13,7 +13,7 @@ def pad_alfa(value, length):
     s = str(value)
     return s.ljust(length)[:length]
 
-# ====================== FUNÇÕES PARA GERAR O ARQUIVO CNAB240 ======================
+# ====================== FUNÇÕES PARA GERAR O ARQUIVO CNAB240 (REMESSA) ======================
 def build_header_arquivo(company):
     record = ""
     record += pad_numeric("077", 3)                           # Código do banco (1-3)
@@ -86,62 +86,62 @@ def build_segmento_a_pix(transaction, seq):
     record += pad_numeric("000", 3)                           # Código da câmara centralizadora (18-20)
     # Bloco de dados do favorecido – deve ocupar 53 caracteres
     if transaction["forma_iniciacao"] == "05":
-        record += pad_numeric(transaction.get("fav_banco", ""), 3)      
-        record += pad_numeric(transaction.get("fav_agencia", ""), 5)     
-        record += pad_alfa(transaction.get("fav_agencia_dv", ""), 1)      
-        record += pad_numeric(transaction.get("fav_conta", ""), 12)       
-        record += pad_alfa(transaction.get("fav_conta_dv", ""), 1)        
-        record += " "                                                    
-        record += pad_alfa(transaction.get("fav_nome", ""), 30)           
+        record += pad_numeric(transaction.get("fav_banco", ""), 3)
+        record += pad_numeric(transaction.get("fav_agencia", ""), 5)
+        record += pad_alfa(transaction.get("fav_agencia_dv", ""), 1)
+        record += pad_numeric(transaction.get("fav_conta", ""), 12)
+        record += pad_alfa(transaction.get("fav_conta_dv", ""), 1)
+        record += " "
+        record += pad_alfa(transaction.get("fav_nome", ""), 30)
     else:
-        record += "000"                  # (21-23)
-        record += "00000"                # (24-28)
-        record += " "                    # (29)
-        record += "0" * 12               # (30-41)
-        record += " "                    # (42)
-        record += " " * 30               # (43-72)
-        record += " "                    # Espaço extra (73)
-    record += pad_alfa(transaction.get("doc_empresa", ""), 20)  # (74-93)
-    date_str = transaction["data_pagamento"].strftime("%d%m%Y")  # (94-101)
+        record += "000"                  
+        record += "00000"                
+        record += " "                    
+        record += "0" * 12               
+        record += " "                    
+        record += " " * 30               
+        record += " "                    
+    record += pad_alfa(transaction.get("doc_empresa", ""), 20)  # Número do documento atribuído para a empresa (74-93)
+    date_str = transaction["data_pagamento"].strftime("%d%m%Y")  # Data do pagamento (94-101)
     record += date_str
-    record += pad_alfa("BRL", 3)                              # (102-104)
-    record += pad_numeric("0", 15)                            # (105-119)
+    record += pad_alfa("BRL", 3)                              # Tipo da moeda (102-104)
+    record += pad_numeric("0", 15)                            # Quantidade da moeda (105-119)
     try:
         valor = float(transaction["valor_pagamento"].replace(",", "."))
     except:
         valor = 0.0
     valor_int = int(round(valor * 100))
-    record += pad_numeric(valor_int, 15)                      # (120-134)
-    record += " " * 20                                        # (135-154)
-    record += " " * 8                                         # (155-162)
-    record += " " * 15                                        # (163-177)
-    record += " " * 22                                        # (178-199)
-    record += pad_numeric("01", 2)                            # (200-201)
-    record += " " * 18                                        # (202-219)
-    record += pad_numeric("00010", 5)                         # (220-224)
-    record += " " * 6                                         # (225-230)
-    record += " " * 10                                        # (231-240)
+    record += pad_numeric(valor_int, 15)                      # Valor do pagamento (120-134)
+    record += " " * 20                                        # Número do documento atribuído pelo banco (135-154)
+    record += " " * 8                                         # Data real da efetivação (155-162)
+    record += " " * 15                                        # Valor real da efetivação (163-177)
+    record += " " * 22                                        # Campo em branco (178-199)
+    record += pad_numeric("01", 2)                            # Tipo de conta – default "01" (200-201)
+    record += " " * 18                                        # Campo em branco (202-219)
+    record += pad_numeric("00010", 5)                         # Código finalidade – default "00010" (220-224)
+    record += " " * 6                                         # Campo em branco (225-230)
+    record += " " * 10                                        # Ocorrências para retorno (231-240)
     return record.ljust(240)
 
 def build_segmento_b_pix(transaction, seq):
     record = ""
-    record += pad_numeric("077", 3)                           # (1-3)
-    record += pad_numeric("1", 4)                             # (4-7)
-    record += "3"                                             # (8)
-    record += pad_numeric(seq, 5)                             # (9-13)
-    record += "B"                                             # (14)
-    record += pad_alfa(transaction["forma_iniciacao"], 3)     # (15-17)
-    record += pad_numeric(transaction["tipo_doc_fav"], 1)       # (18)
-    record += pad_numeric(transaction["doc_fav"], 14)         # (19-32)
-    record += pad_alfa(transaction["txid"], 35)               # (33-67)
-    record += " " * 60                                        # (68-127)
+    record += pad_numeric("077", 3)                           
+    record += pad_numeric("1", 4)                             
+    record += "3"                                             
+    record += pad_numeric(seq, 5)                             
+    record += "B"                                             
+    record += pad_alfa(transaction["forma_iniciacao"], 3)     
+    record += pad_numeric(transaction["tipo_doc_fav"], 1)       
+    record += pad_numeric(transaction["doc_fav"], 14)         
+    record += pad_alfa(transaction["txid"], 35)               
+    record += " " * 60                                        
     if transaction["forma_iniciacao"] in ["01", "02", "04"]:
-        record += pad_alfa(transaction["chave_pix"], 99)      # (128-226)
+        record += pad_alfa(transaction["chave_pix"], 99)      
     else:
-        record += " " * 99
-    record += " " * 6                                         # (227-232)
+        record += " " * 99                                    
+    record += " " * 6                                         
     if transaction["fav_ispb"]:
-        record += pad_numeric(transaction["fav_ispb"], 8)     # (233-240)
+        record += pad_numeric(transaction["fav_ispb"], 8)     
     else:
         record += pad_numeric("0", 8)
     return record.ljust(240)
@@ -200,28 +200,54 @@ def generate_cnab_file(company, transactions):
     lines.append(trailer_arquivo)
     return "\n".join(lines)
 
-# ====================== FUNÇÃO PARA IMPORTAR ARQUIVO RETORNO (.RET) ======================
+# ====================== FUNÇÃO PARA IMPORTAR E PARSER O ARQUIVO RETORNO (.RET) ======================
 def parse_ret_file(text):
-    # Divide o arquivo em linhas e garante que cada uma tenha 240 caracteres
+    # Garante que cada linha tenha 240 caracteres
     lines = [line if len(line) >= 240 else line.ljust(240) for line in text.splitlines() if line.strip()]
     registros = []
     for line in lines:
-        registro = {
-            "Código Banco": line[0:3],
-            "Lote": line[3:7],
-            "Tipo Registro": line[7:8],
-            "Conteúdo Completo": line
-        }
-        # Exemplo de extração para o Header do Arquivo (tipo 0) e Trailer (tipo 9)
-        if line[7:8] == "0":
-            registro["Data Geração"] = line[143:151]
-        if line[7:8] == "9":
-            registro["Total Registros"] = line[23:29]
-        registros.append(registro)
+        tipo_registro = line[7:8]
+        # Processa apenas registros de detalhe (tipo "3")
+        if tipo_registro == "3":
+            segmento = line[13:14]
+            if segmento == "A":
+                reg = {}
+                reg["Código Banco"] = line[0:3].strip()
+                reg["Lote"] = line[3:7].strip()
+                reg["Segmento"] = segmento
+                # Número do documento atribuído para a empresa (pos. 74-93)
+                reg["Doc Empresa"] = line[73:93].strip()
+                # Data do pagamento (pos. 94-101)
+                reg["Data Pagamento"] = line[93:101].strip()
+                # Valor nominal do pagamento (pos. 120-134)
+                nominal_str = line[119:134].strip()
+                try:
+                    nominal_val = int(nominal_str)
+                except:
+                    nominal_val = 0
+                reg["Valor Nominal (R$)"] = nominal_val / 100.0
+                # Data real da efetivação (pos. 155-162)
+                data_efetivacao = line[154:162].strip()
+                reg["Data Efetivação"] = data_efetivacao
+                # Valor efetivo (pos. 163-177)
+                efetivo_str = line[162:177].strip()
+                try:
+                    efetivo_val = int(efetivo_str)
+                except:
+                    efetivo_val = 0
+                reg["Valor Efetivo (R$)"] = efetivo_val / 100.0
+                # Ocorrência (pos. 231-240)
+                ocorrencia = line[230:240].strip()
+                reg["Ocorrência"] = ocorrencia
+                # Define o status: se Data Efetivação preenchida (e diferente de "00000000") então pago
+                if data_efetivacao and data_efetivacao != "00000000":
+                    reg["Status"] = "Pago"
+                else:
+                    reg["Status"] = "Não Pago"
+                registros.append(reg)
     return registros
 
 # ====================== INTERFACE STREAMLIT ======================
-# Menu lateral para selecionar a funcionalidade
 menu = st.sidebar.radio("Selecione a funcionalidade", ["Gerar Remessa", "Importar Retorno"])
 
 if menu == "Gerar Remessa":
@@ -339,4 +365,4 @@ elif menu == "Importar Retorno":
             df = pd.DataFrame(registros)
             st.dataframe(df)
         else:
-            st.warning("Nenhum registro encontrado no arquivo.")
+            st.warning("Nenhum registro detalhado (Segmento A) encontrado no arquivo.")
