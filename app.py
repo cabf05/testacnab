@@ -76,10 +76,10 @@ def build_header_lote_pix(company):
 
 def build_segmento_a_pix(transaction, seq):
     record = ""
-    record += pad_numeric("077", 3)                           # Código do banco (1-3)
-    record += pad_numeric("1", 4)                             # Lote de serviço "0001" (4-7)
-    record += "3"                                             # Tipo de registro (8)
-    record += pad_numeric(seq, 5)                             # Número sequencial (9-13)
+    record += pad_numeric("077", 3)                           # (1-3)
+    record += pad_numeric("1", 4)                             # (4-7)
+    record += "3"                                             # (8)
+    record += pad_numeric(seq, 5)                             # (9-13)
     record += "A"                                             # Código de segmento (14)
     record += "0"                                             # Tipo de movimento (15)
     record += pad_numeric("00", 2)                            # Código da instrução para movimento (16-17)
@@ -94,24 +94,24 @@ def build_segmento_a_pix(transaction, seq):
         record += " "
         record += pad_alfa(transaction.get("fav_nome", ""), 30)
     else:
-        record += "000"                  
-        record += "00000"                
-        record += " "                    
-        record += "0" * 12               
-        record += " "                    
-        record += " " * 30               
-        record += " "                    
-    record += pad_alfa(transaction.get("doc_empresa", ""), 20)  # Número do documento atribuído para a empresa (74-93)
-    date_str = transaction["data_pagamento"].strftime("%d%m%Y")  # Data do pagamento (94-101)
+        record += "000"
+        record += "00000"
+        record += " "
+        record += "0" * 12
+        record += " "
+        record += " " * 30
+        record += " "
+    record += pad_alfa(transaction.get("doc_empresa", ""), 20)  # (74-93)
+    date_str = transaction["data_pagamento"].strftime("%d%m%Y")  # (94-101)
     record += date_str
-    record += pad_alfa("BRL", 3)                              # Tipo da moeda (102-104)
-    record += pad_numeric("0", 15)                            # Quantidade da moeda (105-119)
+    record += pad_alfa("BRL", 3)                              # (102-104)
+    record += pad_numeric("0", 15)                            # (105-119)
     try:
         valor = float(transaction["valor_pagamento"].replace(",", "."))
     except:
         valor = 0.0
     valor_int = int(round(valor * 100))
-    record += pad_numeric(valor_int, 15)                      # Valor do pagamento (120-134)
+    record += pad_numeric(valor_int, 15)                      # (120-134)
     record += " " * 20                                        # Número do documento atribuído pelo banco (135-154)
     record += " " * 8                                         # Data real da efetivação (155-162)
     record += " " * 15                                        # Valor real da efetivação (163-177)
@@ -148,28 +148,28 @@ def build_segmento_b_pix(transaction, seq):
 
 def build_trailer_lote(n_transacoes, total_valor):
     record = ""
-    record += pad_numeric("077", 3)                           
-    record += pad_numeric("1", 4)                             
-    record += "5"                                             
-    record += " " * 9                                         
-    registros_lote = 2 * n_transacoes + 2                      
-    record += pad_numeric(registros_lote, 6)                  
+    record += pad_numeric("077", 3)
+    record += pad_numeric("1", 4)
+    record += "5"
+    record += " " * 9
+    registros_lote = 2 * n_transacoes + 2
+    record += pad_numeric(registros_lote, 6)
     total_cents = int(round(total_valor * 100))
-    record += pad_numeric(total_cents, 18)                    
-    record += pad_numeric("0", 18)                            
-    record += " " * 6                                         
-    record += " " * 165                                       
-    record += " " * 10                                        
+    record += pad_numeric(total_cents, 18)
+    record += pad_numeric("0", 18)
+    record += " " * 6
+    record += " " * 165
+    record += " " * 10
     return record.ljust(240)
 
 def build_trailer_arquivo(total_lotes, total_registros):
     record = ""
-    record += pad_numeric("077", 3)                           
-    record += pad_numeric("9999", 4)                          
-    record += "9"                                             
-    record += " " * 9                                         
-    record += pad_numeric(total_lotes, 6)                     
-    record += pad_numeric(total_registros, 6)                 
+    record += pad_numeric("077", 3)
+    record += pad_numeric("9999", 4)
+    record += "9"
+    record += " " * 9
+    record += pad_numeric(total_lotes, 6)
+    record += pad_numeric(total_registros, 6)
     record += " " * (240 - (3+4+1+9+6+6))
     return record.ljust(240)
 
@@ -207,40 +207,44 @@ def parse_ret_file(text):
     registros = []
     for line in lines:
         tipo_registro = line[7:8]
-        # Processa apenas registros de detalhe (tipo "3")
+        # Processa apenas registros de detalhe (tipo "3") e, dentro destes, apenas os Segmento A
         if tipo_registro == "3":
             segmento = line[13:14]
             if segmento == "A":
                 reg = {}
                 reg["Código Banco"] = line[0:3].strip()
                 reg["Lote"] = line[3:7].strip()
+                reg["Tipo Registro"] = line[7:8].strip()
                 reg["Segmento"] = segmento
-                # Número do documento atribuído para a empresa (pos. 74-93)
-                reg["Doc Empresa"] = line[73:93].strip()
-                # Data do pagamento (pos. 94-101)
-                reg["Data Pagamento"] = line[93:101].strip()
-                # Valor nominal do pagamento (pos. 120-134)
-                nominal_str = line[119:134].strip()
+                reg["Tipo Movimento"] = line[14:15].strip()
+                reg["Instrução Movimento"] = line[15:17].strip()
+                reg["Câmara Centralizadora"] = line[17:20].strip()
+                reg["Doc Empresa"] = line[73:93].strip()        # (pos. 74-93)
+                reg["Data Pagamento"] = line[93:101].strip()      # (pos. 94-101)
+                reg["Moeda"] = line[101:104].strip()              # (pos. 102-104)
+                reg["Qtde Moeda"] = line[104:119].strip()         # (pos. 105-119)
+                nominal_str = line[119:134].strip()              # (pos. 120-134)
                 try:
                     nominal_val = int(nominal_str)
                 except:
                     nominal_val = 0
                 reg["Valor Nominal (R$)"] = nominal_val / 100.0
-                # Data real da efetivação (pos. 155-162)
-                data_efetivacao = line[154:162].strip()
-                reg["Data Efetivação"] = data_efetivacao
-                # Valor efetivo (pos. 163-177)
-                efetivo_str = line[162:177].strip()
+                reg["Doc Banco"] = line[134:154].strip()          # (pos. 135-154)
+                reg["Data Efetivação"] = line[154:162].strip()      # (pos. 155-162)
+                efetivo_str = line[162:177].strip()               # (pos. 163-177)
                 try:
                     efetivo_val = int(efetivo_str)
                 except:
                     efetivo_val = 0
                 reg["Valor Efetivo (R$)"] = efetivo_val / 100.0
-                # Ocorrência (pos. 231-240)
-                ocorrencia = line[230:240].strip()
-                reg["Ocorrência"] = ocorrencia
-                # Define o status: se Data Efetivação preenchida (e diferente de "00000000") então pago
-                if data_efetivacao and data_efetivacao != "00000000":
+                # Campo em branco (pos. 178-199) ignorado
+                reg["Tipo de Conta"] = line[199:201].strip()       # (pos. 200-201)
+                # Campo em branco (202-219) ignorado
+                reg["Código Finalidade"] = line[219:224].strip()   # (pos. 220-224)
+                # Campo em branco (225-230) ignorado
+                reg["Ocorrência"] = line[230:240].strip()          # (pos. 231-240)
+                # Define Status com base na Data Efetivação (se diferente de "00000000")
+                if reg["Data Efetivação"] and reg["Data Efetivação"] != "00000000":
                     reg["Status"] = "Pago"
                 else:
                     reg["Status"] = "Não Pago"
